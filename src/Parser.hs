@@ -1,5 +1,5 @@
 module Parser
-    ( Instruction
+    ( Instruction (..)
     , parse
     ) where
 
