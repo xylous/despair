@@ -4,6 +4,8 @@ module Eval
 
 import Parser
 
+import Data.List (find)
+
 type Program = [Instruction]
 type Tape = [(Int, Int)]      -- list of cell indexes and their values
 type Pointer = Int
@@ -19,6 +21,13 @@ changeState :: (Int -> Int) -> Machine -> Machine
 changeState f (Machine tape ptr) = Machine tape' ptr
   where
     tape' = map (\(k,v) -> (k, if k == ptr then f v else v)) tape
+
+-- Extract the value of the cell at the pointer index, or Nothing if there's
+-- no such index
+cellValue :: Machine -> Maybe Int
+cellValue (Machine tape ptr) = do
+    (_,v) <- find (\(k,_) -> k == ptr) tape
+    Just v
 
 eval :: Machine -> Instruction -> Machine
 eval m i
