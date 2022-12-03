@@ -58,18 +58,26 @@ loopContents :: Instruction -> [Instruction]
 loopContents (Loop xs) = xs
 loopContents _ = []
 
--- Execute loop only if the current cell's value is greater than zero and, pray
--- to God your code is correct, maybe return the final state of the machine
+-- Execute loop only if the current cell's value is greater than zero and, after
+-- praying to God that your code is correct, maybe return the final state of the
+-- machine
 loop :: Machine -> [Instruction] -> IO (Maybe Machine)
 loop m is = do
-    m' <- execAll m is
-    let current = fromJust $ cellValue m
-    if current /= 0 then loop (fromJust m') is else return . Just $ m
+    mm' <- execAll m is
+    case mm' of
+        Just m' -> do
+            let current = cellValue m
+            case current of
+                Just val    -> if val /= 0 then loop m' is else return . Just $ m
+                Nothing     -> return Nothing
+        Nothing -> return Nothing
 
 -- Execute all instructions in the instructions chain and return the final state
 -- of the machine... Maybe. Just maybe.
 execAll :: Machine -> [Instruction] -> IO (Maybe Machine)
 execAll m (i:is) = do
-    m' <- eval m i
-    execAll (fromJust m') is
+    mm' <- eval m i
+    case mm' of
+        Just m' -> execAll m' is
+        Nothing -> return Nothing
 execAll m _ = return . Just $ m
