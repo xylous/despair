@@ -1,5 +1,6 @@
 module Eval
-    (
+    ( eval
+    , execAll
     ) where
 
 import Parser
@@ -8,7 +9,6 @@ import Data.List (find)
 import Data.Maybe (fromJust)
 import Data.Char (chr)
 
-type Program = [Instruction]
 type Tape = [(Int, Int)]      -- list of cell indexes and their values
 type Pointer = Int
 data Machine = Machine Tape Pointer deriving (Show, Eq)
