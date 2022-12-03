@@ -41,7 +41,7 @@ eval m i
     | i == Decrement = return . Just $ changeState (subtract 1) m
     | (not . null) iLoop = loop m iLoop
     | i == Output = do
-        print $ chr current
+        putChar $ chr current
         return (Just m)
     | i == Input = do
         line <- getLine
