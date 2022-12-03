@@ -3,4 +3,5 @@ module Main (main) where
 import Lib
 
 main :: IO ()
-main = myFunc
+main = do
+    print "Hello, world!"
