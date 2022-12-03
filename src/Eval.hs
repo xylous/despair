@@ -16,7 +16,7 @@ data Machine = Machine Tape Pointer deriving (Show, Eq)
 -- Allocate `n` entries beginning at index `l`; the last index, therefore, is
 -- l+n
 allocate :: Int -> Int -> Tape
-allocate l n = zip [l..l+n] $ repeat 0
+allocate l n = zip [l..l+n-1] $ repeat 0
 
 -- Apply the given function f only on the cell that the pointer is indicating,
 -- changing its value; don't alter any other cells
