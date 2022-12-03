@@ -10,6 +10,7 @@ data Instruction = MoveR
                  | Input
                  | JumpFw
                  | JumpBw
+                 deriving (Show, Eq)
 type Program = [Instruction]
 type Memory = [(Int, Int)]      -- list of cell indexes and their values
 type Pointer = Int
@@ -26,3 +27,7 @@ toInstruction ch
     | ch == ']' = JumpBw
     -- Don't worry, this should never happen
     | otherwise = undefined
+
+-- Since Brainfuck is holy, I might as well use one-based indexing, equally holy
+allocate :: Int -> Memory
+allocate n = zip [1..n] $ repeat 0
