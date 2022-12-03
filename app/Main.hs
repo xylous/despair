@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import Eval
 
 main :: IO ()
 main = do

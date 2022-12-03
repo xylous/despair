@@ -25,7 +25,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Eval
+      Parser
   other-modules:
       Paths_despair
   hs-source-dirs:
