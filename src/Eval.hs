@@ -35,8 +35,8 @@ cellValue (Machine tape ptr) = do
 -- TODO: types look too ugly. Maybe try fixing them later?
 eval :: Machine -> Instruction -> IO (Maybe Machine)
 eval m i
-    | i == MoveR = return . Just $ Machine tape' (ptr+1)
-    | i == MoveL = return . Just $ Machine tape' (ptr-1)
+    | i == MoveR = return . Just $ Machine tape'R (ptr+1)
+    | i == MoveL = return . Just $ Machine tape'L (ptr-1)
     | i == Increment = return . Just $ changeState (+1) m
     | i == Decrement = return . Just $ changeState (subtract 1) m
     | (not . null) iLoop = loop m iLoop
@@ -66,11 +66,17 @@ eval m i
         -- mean, as long as the input isn't any bonkers, then sure... it runs
         -- fine I guess?
         current = fromJust $ cellValue m
-        -- dynamically allocate more tape if we need it
-        -- TODO ASAP: have it based upon the pointer's whereabouts instead of
-        -- the absolute length. Maybe create cells as they're used?
-        tape' = if l <= ptr then tape ++ allocate l 10 else tape
-        l = length tape
+        -- Dynamically allocate more tape if we need it - practically, create
+        -- cells at the new pointer's location, if it's needed
+        tape'R = moreTape tape (ptr+1)
+        tape'L = moreTape tape (ptr-1)
+
+-- If the pointer is pointing to a nonexistent cell, return a tape with that
+-- cell allocated/created
+moreTape :: Tape -> Pointer -> Tape
+moreTape tape ptr = case cellValue (Machine tape ptr) of
+                        Just _  -> tape
+                        Nothing -> tape ++ allocate ptr 1
 
 -- If the given instruction is a loop, return all instructions within it
 loopContents :: Instruction -> [Instruction]
