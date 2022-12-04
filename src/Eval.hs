@@ -6,7 +6,7 @@ module Eval
 import Parser
 
 import Data.List (find)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromMaybe)
 import Data.Char (chr)
 
 type Tape = [(Int, Int)]      -- list of cell indexes and their values
@@ -35,11 +35,10 @@ cellValue (Machine tape ptr) = do
 -- TODO: types look too ugly. Maybe try fixing them later?
 eval :: Machine -> Instruction -> IO (Maybe Machine)
 eval m i
-    | i == MoveR = return . Just $ Machine tape'R (ptr+1)
-    | i == MoveL = return . Just $ Machine tape'L (ptr-1)
+    | i == MoveR = return . Just $ Machine tape'R ptr'R
+    | i == MoveL = return . Just $ Machine tape'L ptr'L
     | i == Increment = return . Just $ changeState (+1) m
     | i == Decrement = return . Just $ changeState (subtract 1) m
-    | (not . null) iLoop = loop m iLoop
     | i == Output = do
         putChar $ chr current
         return (Just m)
@@ -48,28 +47,18 @@ eval m i
         let newval = read line :: Int
         let m' = changeState (+ (newval - current)) m
         return . Just $ m'
+    | (not . null) iLoop = loop m iLoop
     | otherwise = undefined -- should never happen
       where
         (Machine tape ptr) = m
         iLoop = loopContents i
-        -- Guaranteed to be a Just, if the pointer isn't out of bounds, of
-        -- course. Usually, it shouldn't, since we're dynamically allocating
-        -- tape as the program runs. But you could definitely pass it, say, a
-        -- Machine with a pointer larger than the tape, and it would definitely
-        -- crash. That wouldn't be my fault, nor yours, though. It wouldn't be
-        -- anyone's fault. Well yeah you could argue it's be my fault, but I
-        -- don't take responsibility for this. I'm too tired and too sleepy at
-        -- this point to try solving it. Hell, I wasn't even supposed to write
-        -- this Brainfuck interpreter today. Did you really expect a fully
-        -- fleshed out program that can flawlessly handle each and every error?
-        -- You're in for a treat. This is precisely that kind of program... I
-        -- mean, as long as the input isn't any bonkers, then sure... it runs
-        -- fine I guess?
-        current = fromJust $ cellValue m
+        current = fromMaybe 0 (cellValue m)
         -- Dynamically allocate more tape if we need it - practically, create
         -- cells at the new pointer's location, if it's needed
-        tape'R = moreTape tape (ptr+1)
-        tape'L = moreTape tape (ptr-1)
+        tape'R = moreTape tape ptr'R
+        tape'L = moreTape tape ptr'L
+        ptr'R = ptr + 1
+        ptr'L = ptr - 1
 
 -- If the pointer is pointing to a nonexistent cell, return a tape with that
 -- cell allocated/created
