@@ -8,4 +8,8 @@ and this project adheres to the
 
 ## Unreleased
 
-## 0.1.0.0 - YYYY-MM-DD
+## 0.1.0.0 - 2022-12-27
+
+- implement parser
+- implement evaluator, with support for ALL operations
+- dynamically allocate tape (memory) when it's needed
