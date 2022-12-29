@@ -68,11 +68,6 @@ moreTape tape ptr = case cellValue (Machine tape ptr) of
                         Just _  -> tape
                         Nothing -> tape ++ allocate ptr 1
 
--- If the given instruction is a loop, return all instructions within it
-loopContents :: Instruction -> [Instruction]
-loopContents (Loop xs) = xs
-loopContents _ = []
-
 -- Execute loop (list of instructions) only if the current cell's value is
 -- greater than zero and, after praying to God that your code is correct, maybe
 -- return the final state of the machine

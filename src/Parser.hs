@@ -1,6 +1,10 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Parser
     ( Instruction (..)
     , parse
+    , parseFile
+    , loopContents
     ) where
 
 import Control.Applicative
@@ -45,21 +49,13 @@ parse str = do
     (rest, x) <- runParser instruction str
     fmap (x :) (parse rest)
 
-charP :: Char -> Parser Char
-charP x = Parser f
-  where
-    f (c:rest)
-        | c == x = Just (rest, c)
-        | otherwise = Nothing
-    f _ = Nothing
-
--- take f and feed it to span over the parser's input; if the result is an empty
--- list, meaning the predicate failed, then return Nothing, otehrwise return the
--- rest of the string and the parsed token
-spanP :: (Char -> Bool) -> Parser String
-spanP f = Parser $ \x ->
-    let (token, rest) = span f x
-     in if null token then Nothing else Just (rest, token)
+-- NOTE: all comments are stripped from the
+parseFile :: String -> IO [Instruction]
+parseFile path = do
+    contents <- readFile path
+    case parse contents of
+        Just is -> return $ stripComments is
+        _ -> return []
 
 instruction :: Parser Instruction
 instruction = moveR <|> moveL <|> increment <|> decrement <|> output <|> input <|> loop <|> comment
@@ -85,9 +81,6 @@ input = Input <$ charP ','
 loop :: Parser Instruction
 loop = Loop <$> (charP '[' *> many instruction <* charP ']')
 
-isBFChar :: Char -> Bool
-isBFChar x = x `elem` "+-><,.[]"
-
 -- comments are disregarded, but in order to disregard them we have to know what
 -- they are
 comment :: Parser Instruction
@@ -101,3 +94,35 @@ comment = Comment <$>
                 -- command characters are treated as comments
                 spanP (not . isBFChar)
             )
+
+charP :: Char -> Parser Char
+charP x = Parser f
+  where
+    f (c:rest)
+        | c == x = Just (rest, c)
+        | otherwise = Nothing
+    f _ = Nothing
+
+-- take f and feed it to span over the parser's input; if the result is an empty
+-- list, meaning the predicate failed, then return Nothing, otehrwise return the
+-- rest of the string and the parsed token
+spanP :: (Char -> Bool) -> Parser String
+spanP f = Parser $ \x ->
+    let (token, rest) = span f x
+     in if null token then Nothing else Just (rest, token)
+
+-- NOTE: it's empty list if the instruction isn't a loop, or if the loop has no
+-- instructions
+loopContents :: Instruction -> [Instruction]
+loopContents = \case Loop xs -> xs
+                     _ -> []
+
+isBFChar :: Char -> Bool
+isBFChar x = x `elem` "+-><,.[]"
+
+stripComments :: [Instruction] -> [Instruction]
+stripComments [] = []
+stripComments (i:is) = case i of
+                        Comment _ -> stripComments is
+                        Loop xs -> Loop (stripComments xs) : stripComments is
+                        _ -> i : stripComments is
