@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Eval
     ( eval
     , execAll
@@ -13,6 +15,16 @@ import Data.Char (chr)
 type Tape = [(Int, Int)]      -- list of cell indexes and their values
 type Pointer = Int
 data Machine = Machine Tape Pointer deriving (Show, Eq)
+
+-- Basically the same as an Instruction but now every operation (except the
+-- loop) is repeated some number of times
+-- It's used by the optimiser to do things quicker
+data SimpleIns = AddCell Int
+               | AddPtr Int
+               | SInput Int
+               | SOutput Int
+               | SimpleLoop [SimpleIns]
+               deriving (Show, Eq)
 
 -- Allocate `n` entries beginning at index `l`; the last index, therefore, is
 -- l+n
@@ -98,3 +110,47 @@ evalFile path = do
     is <- parseFile path
     let m = Machine (allocate 0 1) 0
     execAll m is
+
+-- Turn a list of instructions into a list of simple instructions; no less, no
+-- more
+simplify :: [Instruction] -> [SimpleIns]
+simplify [] = []
+simplify is =
+    let result = case head is of
+            Loop xs -> [SimpleLoop (simplify xs)]
+            Increment -> ifNotNull AddCell deltaN
+            Decrement -> ifNotNull AddCell (negate deltaN)
+            MoveR -> ifNotNull AddPtr deltaN
+            MoveL -> ifNotNull AddPtr (negate deltaN)
+            Output -> [SOutput lenConsumedOps]
+            Input -> [SInput lenConsumedOps]
+            _ -> []
+        in result ++ simplify (drop lenConsumedOps is)
+  where
+    lenConsumedOps = length matchingOps
+    matchingOps = takeFirstMatching is
+    ifNotNull :: (Int -> SimpleIns) -> Int -> [SimpleIns]
+    ifNotNull i n = [i n | n /= 0]
+    deltaN = sum $ map (\x -> if x == Decrement || x == MoveL then negate 1 else 1) matchingOps
+
+-- Two instructions are "matching" if they have the same role, i.e they refer to
+-- the same thing. `+` and `+` are matching because they both increment the
+-- a cell's value, but `+` and `-` aer also matching; `+` and `<` aren't
+-- matching, but `<` and `>` are, and so on and so forth
+-- Note that all identical operations are considered matching
+
+-- This function takes the first "matching" instructions until it finds one that
+-- isn't matching
+takeFirstMatching :: [Instruction] -> [Instruction]
+takeFirstMatching [] = []
+takeFirstMatching is = takeWhile f is
+    where
+        hi = head is
+        f :: Instruction -> Bool
+        f x
+            | x == hi = True
+            | x == Increment && hi == Decrement = True
+            | x == Decrement && hi == Increment = True
+            | x == MoveR && hi == MoveL = True
+            | x == MoveL && hi == MoveR = True
+            | otherwise = False
