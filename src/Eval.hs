@@ -92,17 +92,9 @@ execAll m (i:is) = do
         Nothing -> return Nothing
 execAll m _ = return . Just $ m
 
--- Naively, keep only the character set of the language
-keepBFChars :: String -> String
-keepBFChars = filter (`elem` bfChars)
-
-bfChars :: [Char]
-bfChars = "+-><[].,"
-
 -- Evaluate the program in the given file and return the resulting machine
 evalFile :: FilePath -> IO (Maybe Machine)
-evalFile fileName = do
-    input <- readFile fileName
+evalFile path = do
+    is <- parseFile path
     let m = Machine (allocate 0 1) 0
-    let is = fromMaybe [] $ parse . keepBFChars $ input
     execAll m is
