@@ -46,7 +46,7 @@ parse str = do
     (rest, x) <- runParser instruction str
     fmap (x :) (parse rest)
 
--- NOTE: all comments are stripped from the
+-- NOTE: all comments are stripped
 parseFile :: String -> IO [Instruction]
 parseFile path = do
     contents <- readFile path
@@ -78,8 +78,8 @@ input = Input <$ charP ','
 loop :: Parser Instruction
 loop = Loop <$> (charP '[' *> many instruction <* charP ']')
 
--- comments are disregarded, but in order to disregard them we have to know what
--- they are
+-- comments should be disregarded, but in order to disregard them we have to
+-- know what they are
 comment :: Parser Instruction
 comment = Comment <$>
             (

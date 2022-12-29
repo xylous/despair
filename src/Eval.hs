@@ -1,7 +1,9 @@
 module Eval
-    ( eval
+    ( exec
     , execAll
     , evalFile
+    , execO
+    , execAllO
     , evalFileO
     ) where
 
@@ -13,8 +15,11 @@ import Data.Char (chr)
 import Control.Monad (foldM)
 
 type Tape = [(Int, Int)]      -- list of cell indexes and their values
+
 type Pointer = Int
-data Machine = Machine Tape Pointer deriving (Show, Eq)
+
+data Machine = Machine Tape Pointer
+             deriving (Show, Eq)
 
 -- Basically the same as an Instruction but now every operation (except the
 -- loop) is repeated some number of times
@@ -25,6 +30,10 @@ data SimpleIns = AddCell Int
                | SOutput Int
                | SimpleLoop [SimpleIns]
                deriving (Show, Eq)
+
+-----------------
+---- UTILITY ----
+-----------------
 
 -- Apply the given function f only on the cell that the pointer is indicating,
 -- changing its value; don't alter any other cells
@@ -40,9 +49,23 @@ cellValue (Machine tape ptr) = do
     (_,v) <- find (\(k,_) -> k == ptr) tape
     Just v
 
+hasIndex :: Tape -> Int -> Bool
+tape `hasIndex` n = case cellValue (Machine tape n) of
+                        Just _ -> True
+                        Nothing -> False
+
+-- if the pointer is out of bounds (not within the limits of the current tape),
+-- then allocate a new cell at that position
+moreTape :: Tape -> Pointer -> Tape
+moreTape tape ptr = if tape `hasIndex` ptr then tape else tape ++ [(ptr, 0)]
+
+-------------------
+---- EVALUATOR ----
+-------------------
+
 -- TODO: types look too ugly. Maybe try fixing them later?
-eval :: Machine -> Instruction -> IO Machine
-eval m i = case i of
+exec :: Machine -> Instruction -> IO Machine
+exec m i = case i of
             MoveR -> return $ Machine (tape' (ptr + 1)) (ptr + 1)
             MoveL -> return $ Machine (tape' (ptr - 1)) (ptr - 1)
             Increment -> return $ changeState (+1) m
@@ -53,6 +76,9 @@ eval m i = case i of
             Input -> do
                 line <- getLine
                 let newval = read line :: Int
+                -- to get to the value that the user inputted, we can just add
+                -- the difference between said value and the current value in
+                -- the cell, which is neat
                 return $ changeState (+ (newval - cv)) m
             Loop xs -> loop m xs
             _ -> return m
@@ -75,13 +101,17 @@ loop m is = do
 -- Execute all instructions in the instructions chain and return the final state
 -- of the machine... Maybe. Just maybe.
 execAll :: Machine -> [Instruction] -> IO Machine
-execAll = foldM eval
+execAll = foldM exec
 
 -- Evaluate the program in the given file and return the resulting machine
 evalFile :: FilePath -> IO Machine
 evalFile path = do
     is <- parseFile path
     execAll (Machine [(0,0)] 0) is
+
+-------------------
+---- OPTIMISER ----
+-------------------
 
 -- Turn a list of instructions into a list of simple instructions; no less, no
 -- more
@@ -126,17 +156,9 @@ takeFirstMatching is = takeWhile f is
             | x == MoveL && hi == MoveR = True
             | otherwise = False
 
-hasIndex :: Tape -> Int -> Bool
-tape `hasIndex` n = case cellValue (Machine tape n) of
-                        Just _ -> True
-                        Nothing -> False
-
-moreTape :: Tape -> Int -> Tape
-moreTape tape n = if tape `hasIndex` n then tape else tape ++ [(n, 0)]
-
 execO :: Machine -> SimpleIns -> IO Machine
 execO m s = case s of
-    AddCell n -> return $ changeState (+n) m
+    AddCell n -> return $ changeState (+ n) m
     AddPtr n -> return $ Machine (moreTape tape (ptr + n)) (ptr + n)
     SimpleLoop xs -> loopO m xs
     SOutput n -> do
