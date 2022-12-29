@@ -5,6 +5,7 @@ module Parser
     ) where
 
 import Control.Applicative
+import Data.Char (isSpace)
 
 data Instruction = MoveR
                  | MoveL
@@ -86,10 +87,13 @@ comment = Comment <$>
                 -- as an extension, a comment starting with `;` ends on newline
                 -- this is an innocent extension that does no harm. it doesn't
                 -- bite
-                (charP ';' *> spanP (/='\n')) <|>
+                charP ';' *> spanP (/='\n')
+                -- somehow not parsing empty whitespace separately breaks
+                -- things. If It Works It Works:TM:
+                <|> spanP isSpace
                 -- as per the "standard" specification, all but the eight
                 -- command characters are treated as comments
-                spanP (not . isBFChar)
+                <|> spanP (not . isBFChar)
             )
 
 charP :: Char -> Parser Char
