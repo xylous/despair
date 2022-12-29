@@ -8,6 +8,14 @@ and this project adheres to the
 
 ## Unreleased
 
+## 0.2.0.0 - 2022-12-29
+
+- parser: add support for comments, i.e. all characters that are not the 8
+    controls
+- implement optimiser, which simplifies instructions and executes them so that
+    less computing is done
+- add sample brainfuck programs/files
+
 ## 0.1.0.0 - 2022-12-27
 
 - implement parser

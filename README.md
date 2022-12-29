@@ -28,6 +28,8 @@ which it parses and executes, eventually printing the output of the machine.
 
 - [x] implement parser
     - [x] parse all character-commands
+    - [x] parse comments
+        - [x] extension: comments starting with `;`
     - [ ] return precise error messages
         - [ ] character number and line number
         - [ ] reason for error
@@ -35,17 +37,21 @@ which it parses and executes, eventually printing the output of the machine.
     - [x] basic operations: `+`, `-`, `>`, `<`
     - [x] loops: `[`, `]`
     - [x] I/O operations: `.`, `,`
-    - [ ] optimise
-        - [ ] reduce arithmetic whenever possible: e.g. `+++-` would change a
+    - [x] optimise
+        - [x] reduce arithmetic whenever possible: e.g. `+++-` would change a
             cell's value by a total of 3
-        - [ ] simplify pointer movements: e.g. `>>>>>` moves the pointer right
+        - [x] simplify pointer movements: e.g. `>>>>>` moves the pointer right
             by five cells
-        - [ ] associate pointer positions with operations, creating pairs
-- [ ] `-t` flag displays the execution time for the given program
+        - [ ] ~~associate pointer positions with operations, creating pairs~~
 - [ ] add tests
+    - [x] sample Brainfuck programs
     - [ ] parser tests
     - [ ] evaluator tests
         - [ ] optimiser tests
+- [ ] extra features
+    - [x] arbitrary cell indexes - pointer can be anywhere
+    - [ ] allow using different cell sizes: 8, 16, 32, 64 bits (for wrapping)
+    - [ ] specify signed or unsigned cell bytes
 - [ ] REPL mode
     - [ ] `reset` command, for bringing the machine back to the initial state
 - [ ] debug mode - run simulation step-by-step
