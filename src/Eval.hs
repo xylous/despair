@@ -1,9 +1,8 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Eval
     ( eval
     , execAll
     , evalFile
+    , evalFileO
     ) where
 
 import Parser
@@ -11,6 +10,7 @@ import Parser
 import Data.List (find)
 import Data.Maybe (fromMaybe)
 import Data.Char (chr)
+import Control.Monad (foldM)
 
 type Tape = [(Int, Int)]      -- list of cell indexes and their values
 type Pointer = Int
@@ -153,3 +153,44 @@ takeFirstMatching is = takeWhile f is
             | x == MoveR && hi == MoveL = True
             | x == MoveL && hi == MoveR = True
             | otherwise = False
+
+hasIndex :: Tape -> Int -> Bool
+tape `hasIndex` n = case cellValue (Machine tape n) of
+                        Just _ -> True
+                        Nothing -> False
+
+execO :: Machine -> SimpleIns -> IO Machine
+execO m s = case s of
+    AddCell n -> return $ changeState (+n) m
+    AddPtr n -> return $ Machine (tape' (ptr + n)) (ptr + n)
+    SimpleLoop xs -> loopO m xs
+    SOutput n -> do
+        putStr $ replicate n (chr cv)
+        return m
+    SInput _ -> do
+        line <- getLine
+        let newval = read line :: Int
+        let m' = changeState (+ (newval - cv)) m
+        return m'
+  where
+    (Machine tape ptr) = m
+    tape' :: Int -> Tape
+    tape' n = if tape `hasIndex` n then tape else tape ++ [(n, 0)]
+    cv = fromMaybe 0 (cellValue m)
+
+execAllO :: Machine -> [SimpleIns] -> IO Machine
+execAllO m [] = return m
+execAllO m ss = foldM execO m ss
+
+loopO :: Machine -> [SimpleIns] -> IO Machine
+loopO m sis = do
+    m' <- execAllO m sis
+    if cv /= 0 then loopO m' sis else return m
+  where
+    cv = fromMaybe 0 (cellValue m)
+
+evalFileO :: FilePath -> IO Machine
+evalFileO path = do
+    inp <- parseFile path
+    let simplified = simplify inp
+    execAllO (Machine [(0,0)] 0) simplified
