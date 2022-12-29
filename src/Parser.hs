@@ -12,6 +12,7 @@ data Instruction = MoveR
                  | Output
                  | Input
                  | Loop [Instruction]
+                 | Comment String
                  deriving (Show, Eq)
 
 -- TODO: implement proper error reporting
@@ -38,6 +39,12 @@ instance Alternative Parser where
     -- implementation of Alternative for the most part
     (Parser p1) <|> (Parser p2) = Parser $ \str -> p1 str <|> p2 str
 
+parse :: String -> Maybe [Instruction]
+parse [] = Just []
+parse str = do
+    (rest, x) <- runParser instruction str
+    fmap (x :) (parse rest)
+
 charP :: Char -> Parser Char
 charP x = Parser f
   where
@@ -46,14 +53,16 @@ charP x = Parser f
         | otherwise = Nothing
     f _ = Nothing
 
-parse :: String -> Maybe [Instruction]
-parse [] = Just []
-parse str = do
-    (rest, x) <- runParser instruction str
-    fmap (x :) (parse rest)
+-- take f and feed it to span over the parser's input; if the result is an empty
+-- list, meaning the predicate failed, then return Nothing, otehrwise return the
+-- rest of the string and the parsed token
+spanP :: (Char -> Bool) -> Parser String
+spanP f = Parser $ \x ->
+    let (token, rest) = span f x
+     in if null token then Nothing else Just (rest, token)
 
 instruction :: Parser Instruction
-instruction = moveR <|> moveL <|> increment <|> decrement <|> output <|> input <|> loop
+instruction = moveR <|> moveL <|> increment <|> decrement <|> output <|> input <|> loop <|> comment
 
 moveR :: Parser Instruction
 moveR = MoveR <$ charP '>'
@@ -75,3 +84,20 @@ input = Input <$ charP ','
 
 loop :: Parser Instruction
 loop = Loop <$> (charP '[' *> many instruction <* charP ']')
+
+isBFChar :: Char -> Bool
+isBFChar x = x `elem` "+-><,.[]"
+
+-- comments are disregarded, but in order to disregard them we have to know what
+-- they are
+comment :: Parser Instruction
+comment = Comment <$>
+            (
+                -- as an extension, a comment starting with `;` ends on newline
+                -- this is an innocent extension that does no harm. it doesn't
+                -- bite
+                (charP ';' *> spanP (/='\n')) <|>
+                -- as per the "standard" specification, all but the eight
+                -- command characters are treated as comments
+                spanP (not . isBFChar)
+            )
