@@ -118,10 +118,10 @@ simplify [] = []
 simplify is =
     let result = case head is of
             Loop xs -> [SimpleLoop (simplify xs)]
-            Increment -> ifNotNull AddCell deltaN
-            Decrement -> ifNotNull AddCell (negate deltaN)
-            MoveR -> ifNotNull AddPtr deltaN
-            MoveL -> ifNotNull AddPtr (negate deltaN)
+            Increment -> ifNotNull AddCell lenConsumedOps
+            Decrement -> ifNotNull AddCell (negate lenConsumedOps)
+            MoveR -> ifNotNull AddPtr lenConsumedOps
+            MoveL -> ifNotNull AddPtr (negate lenConsumedOps)
             Output -> [SOutput lenConsumedOps]
             Input -> [SInput lenConsumedOps]
             _ -> []
@@ -131,7 +131,6 @@ simplify is =
     matchingOps = takeFirstMatching is
     ifNotNull :: (Int -> SimpleIns) -> Int -> [SimpleIns]
     ifNotNull i n = [i n | n /= 0]
-    deltaN = sum $ map (\x -> if x == Decrement || x == MoveL then negate 1 else 1) matchingOps
 
 -- Two instructions are "matching" if they have the same role, i.e they refer to
 -- the same thing. `+` and `+` are matching because they both increment the
