@@ -1,10 +1,7 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Parser
     ( Instruction (..)
     , parse
     , parseFile
-    , loopContents
     ) where
 
 import Control.Applicative
@@ -110,12 +107,6 @@ spanP :: (Char -> Bool) -> Parser String
 spanP f = Parser $ \x ->
     let (token, rest) = span f x
      in if null token then Nothing else Just (rest, token)
-
--- NOTE: it's empty list if the instruction isn't a loop, or if the loop has no
--- instructions
-loopContents :: Instruction -> [Instruction]
-loopContents = \case Loop xs -> xs
-                     _ -> []
 
 isBFChar :: Char -> Bool
 isBFChar x = x `elem` "+-><,.[]"
